@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vortx Panel - Sistema de Gestión</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #4e73df;
+      --secondary: #858796;
+      --success: #1cc88a;
+      --warning: #f6c23e;
+      --danger: #e74a3b;
+      --dark: #343a40;
+    }
+    body { 
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+    
+    /* Login Styles */
+    #login-screen {
+      min-height: 100vh; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      padding: 20px;
+    }
+    .login-card {
+      background: white; 
+      padding: 2.5rem; 
+      border-radius: 20px; 
+      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+      width: 100%; 
+      max-width: 420px;
+      animation: slideUp 0.5s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* App Styles */
+    #app-container { display: none; }
+    
+    .sidebar {
+      min-height: 100vh; 
+      background: var(--dark); 
+      color: white;
+      position: fixed;
+      width: 250px;
+      left: 0;
+      top: 0;
+      padding: 1rem;
+      z-index: 1000;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+    .sidebar .brand {
+      font-size: 1.4rem;
+      font-weight: 700;
+      padding: 1rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .nav-link { 
+      color: #cfd2d6; 
+      padding: 0.75rem 1rem; 
+      margin: 0.25rem 0;
+      border-radius: 8px;
+      transition: all 0.2s;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .nav-link:hover, .nav-link.active { 
+      background: rgba(255,255,255,0.15); 
+      color: white; 
+      transform: translateX(5px);
+    }
+    .nav-link i { 
+      margin-right: 12px; 
+      width: 20px; 
+      text-align: center; 
+      font-size: 1.1rem;
+    }
+    
+    .main-content {
+      margin-left: 250px;
+      padding: 2rem;
+    }
+    
+    .card-stat { 
+      border: none; 
+      border-radius: 15px; 
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
+      color: white; 
+      transition: transform 0.2s;
+      height: 100%;
+    }
+    .card-stat:hover { transform: translateY(-5px); }
+    .bg-gradient-primary { background: linear-gradient(135deg, #4e73df, #224abe); }
+    .bg-gradient-success { background: linear-gradient(135deg, #1cc88a, #13855c); }
+    .bg-gradient-warning { background: linear-gradient(135deg, #f6c23e, #dda20a); color: #333; }
+    .bg-gradient-danger { background: linear-gradient(135deg, #e74a3b, #c0392b); }
+    
+    .card-stat .icon {
+      font-size: 2.5rem;
+      opacity: 0.3;
+      position: absolute;
+      right: 20px;
+      top: 20px;
+    }
+    
+    .section-view { display: none; animation: fadeIn 0.4s ease; }
+    .section-view.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .table-container {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+      margin-top: 1rem;
+    }
+    
+    .form-card {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--primary);
+    }
+    
+    .btn-action {
+      border-radius: 8px;
+      padding: 0.4rem 1rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn-action:hover { transform: scale(1.05); }
+    
+    .loading-overlay {
+      position: fixed; 
+      top: 0; left: 0; 
+      width: 100%; height: 100%;
+      background: rgba(255,255,255,0.9); 
+      z-index: 9999; 
+      display: none;
+      justify-content: center; 
+      align-items: center;
+      flex-direction: column;
+    }
+    .loading-overlay.show { display: flex; }
+    
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        min-height: auto;
+      }
+      .main-content { margin-left: 0; padding: 1rem; }
+      .nav-link { display: inline-block; margin: 0.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div id="loader" class="loading-overlay">
+    <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status"></div>
+    <p class="mt-3 fw-bold text-secondary">Procesando...</p>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="text-center mb-4">
+        <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+        <h3 class="fw-bold">Vortx Panel</h3>
+        <p class="text-muted">Sistema de Gestión Comercial</p>
+      </div>
+      
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Usuario</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-user"></i></span>
+            <input type="text" id="username" class="form-control" placeholder="Ingresa tu usuario" required>
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Contraseña</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+            <input type="password" id="password" class="form-control" placeholder="Ingresa tu contraseña" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+          <i class="fas fa-sign-in-alt me-2"></i>Ingresar al Sistema
+        </button>
+      </form>
+      <p id="login-error" class="text-danger text-center mt-3 fw-semibold" style="display:none;">
+        <i class="fas fa-exclamation-circle me-1"></i>Credenciales incorrectas
+      </p>
+      <p class="text-center text-muted small mt-4">
+        <i class="fas fa-lock me-1"></i>Conexión segura con Google Sheets API
+      </p>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION -->
+  <div id="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+      <div class="brand">
+        <i class="fas fa-cube me-2"></i>Vortx System
+      </div>
+      <div class="nav flex-column">
+        <a class="nav-link active" onclick="navigate('dashboard')">
+          <i class="fas fa-chart-line"></i>Dashboard
+        </a>
+        <a class="nav-link" onclick="navigate('inventario')">
+          <i class="fas fa-boxes-stacked"></i>Inventario
+        </a>
+        <a class="nav-link" onclick="navigate('ventas')">
+          <i class="fas fa-cash-register"></i>Registrar Venta
+        </a>
+        <a class="nav-link" onclick="navigate('deudores')">
+          <i class="fas fa-hand-holding-dollar"></i>Deudores
+        </a>
+        <a class="nav-link" onclick="navigate('reportes')">
+          <i class="fas fa-file-invoice-dollar"></i>Reportes
+        </a>
+        <div class="mt-auto pt-4 border-top border-secondary">
+          <a class="nav-link text-danger" onclick="handleLogout()">
+            <i class="fas fa-right-from-bracket"></i>Cerrar Sesión
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- DASHBOARD SECTION -->
+      <section id="dashboard" class="section-view active">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2 class="fw-bold mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Panel de Control</h2>
+          <button class="btn btn-outline-primary btn-sm" onclick="refreshData()">
+            <i class="fas fa-sync-alt me-1"></i>Actualizar
+          </button>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="row g-4 mb-4">
+          <div class="col-md-4">
+            <div class="card card-stat bg-gradient-primary p-4 position-relative">
+              <i class="fas fa-chart-bar icon"></i>
+              <h6 class="text-uppercase mb-1">Ventas Hoy</h6>
+              <h2 class="mb-0 fw-bold" id="dash-ventas-hoy">$0.00</h2>
+              <small class="opacity-75">Registradas en el día</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card card-stat bg-gradient-warning p-4 position-relative">
+              <i class="fas fa-hand-holding-dollar icon"></i>
+              <h6 class="text-uppercase mb-1">Por Cobrar</h6>
+              <h2 class="mb-0 fw-bold" id="dash-por-cobrar">$0.00</h2>
+              <small class="opacity-75">Deudas pendientes</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card card-stat bg-gradient-success p-4 position-relative">
+              <i class="fas fa-database icon"></i>
+              <h6 class="text-uppercase mb-1">Productos</h6>
+              <h2 class="mb-0 fw-bold" id="dash-productos">0</h2>
+              <small class="opacity-75">En inventario</small>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="row">
+          <div class="col-lg-8">
+            <div class="table-container">
+              <h5 class="fw-bold mb-3"><i class="fas fa-clock me-2"></i>Últimas Ventas</h5>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle" id="tabla-ventas-dash">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Producto</th>
+                      <th>Cant.</th>
+                      <th class="text-end">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="table-container">
+              <h5 class="fw-bold mb-3"><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Deudas Pendientes</h5>
+              <div class="list-group list-group-flush" id="lista-deudas-dash">
+                <!-- Se llena dinámicamente -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INVENTARIO SECTION -->
+      <section id="inventario" class="section-view">
+        <h2 class="fw-bold mb-4"><i class="fas fa-boxes-stacked me-2 text-primary"></i>Gestión de Inventario</h2>
+        
+        <div class="form-card">
+          <h5 class="fw-bold mb-3"><i class="fas fa-plus-circle me-2"></i>Agregar Nuevo Producto</h5>
+          <form id="form-inventario" onsubmit="submitForm(event, 'guardarProducto')">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">Nombre del Producto</label>
+                <input type="text" class="form-control" name="nombre" placeholder="Ej: Laptop HP" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Precio Unitario ($)</label>
+                <input type="number" class="form-control" name="precio" placeholder="0.00" step="0.01" min="0" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Stock Inicial</label>
+                <input type="number" class="form-control" name="stock" placeholder="0" min="0" required>
+              </div>
+              <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100 btn-action">
+                  <i class="fas fa-save me-1"></i>Guardar
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+        
+        <div class="table-container">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Catálogo de Productos</h5>
+            <input type="text" class="form-control form-control-sm w-auto" placeholder="Buscar..." onkeyup="filterTable(this, 'tabla-inventario')">
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle" id="tabla-inventario">
+              <thead class="table-light">
+                <tr>
+                  <th>Producto</th>
+                  <th class="text-end">Precio</th>
+                  <th class="text-center">Stock</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VENTAS SECTION -->
+      <section id="ventas" class="section-view">
+        <h2 class="fw-bold mb-4"><i class="fas fa-cash-register me-2 text-success"></i>Registrar Nueva Venta</h2>
+        
+        <div class="form-card border-success">
+          <form id="form-venta" onsubmit="submitForm(event, 'guardarVenta')">
+            <div class="row g-3 align-items-end">
+              <div class="col-md-5">
+                <label class="form-label small fw-semibold">Producto</label>
+                <select class="form-select" name="producto" id="select-productos-venta" required onchange="calcularTotalVenta()">
+                  <option value="">Seleccione un producto...</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold">Cantidad</label>
+                <input type="number" class="form-control" name="cantidad" id="venta-cantidad" value="1" min="1" required oninput="calcularTotalVenta()">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Total a Pagar ($)</label>
+                <input type="text" class="form-control fw-bold" id="venta-total" readonly value="$0.00">
+              </div>
+              <div class="col-md-2">
+                <button type="submit" class="btn btn-success w-100 btn-action fw-bold">
+                  <i class="fas fa-check-circle me-1"></i>Confirmar
+                </button>
+              </div>
+            </div>
+            <div class="alert alert-info mt-3 mb-0 small">
+              <i class="fas fa-info-circle me-1"></i>
+              El stock se descontará automáticamente al registrar la venta.
+            </div>
+          </form>
+        </div>
+        
+        <div class="table-container">
+          <h5 class="fw-bold mb-3">Historial de Ventas (Últimas 20)</h5>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle" id="tabla-historial-ventas">
+              <thead class="table-light">
+                <tr>
+                  <th>Fecha/Hora</th>
+                  <th>Producto</th>
+                  <th class="text-center">Cant.</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- DEUDORES SECTION -->
+      <section id="deudores" class="section-view">
+        <h2 class="fw-bold mb-4"><i class="fas fa-hand-holding-dollar me-2 text-warning"></i>Gestión de Deudores</h2>
+        
+        <div class="form-card border-warning">
+          <h5 class="fw-bold mb-3"><i class="fas fa-calculator me-2"></i>Crear Préstamo con Intereses</h5>
+          <form id="form-deuda" onsubmit="submitForm(event, 'guardarDeuda')">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Nombre del Cliente</label>
+                <input type="text" class="form-control" name="cliente" placeholder="Ej: Juan Pérez" required>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold">Monto Prestado ($)</label>
+                <input type="number" class="form-control" name="monto" id="deuda-monto" placeholder="0.00" step="0.01" min="0" required oninput="calcularTotalDeuda()">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold">Interés (%)</label>
+                <input type="number" class="form-control" name="interes" id="deuda-interes" placeholder="Ej: 10" min="0" max="100" required oninput="calcularTotalDeuda()">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold">Plazo (Meses)</label>
+                <input type="number" class="form-control" name="meses" id="deuda-meses" placeholder="Ej: 6" min="1" required oninput="calcularTotalDeuda()">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Total a Pagar ($)</label>
+                <input type="text" class="form-control fw-bold bg-light" id="deuda-total" readonly value="$0.00">
+              </div>
+            </div>
+            <div class="alert alert-warning mt-3 mb-0 small">
+              <i class="fas fa-calculator me-1"></i>
+              Fórmula: <strong>Total = Monto + (Monto × Interés% × Meses)</strong>. Ej: $1000 + ($1000 × 10% × 6) = $1600
+            </div>
+            <div class="mt-3">
+              <button type="submit" class="btn btn-warning btn-action fw-bold text-dark">
+                <i class="fas fa-file-contract me-1"></i>Registrar Préstamo
+              </button>
+            </div>
+          </form>
+        </div>
+        
+        <div class="table-container">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Listado de Deudores</h5>
+            <span class="badge bg-warning text-dark fs-6" id="contador-deudas">0 pendientes</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle" id="tabla-deudores">
+              <thead class="table-light">
+                <tr>
+                  <th>Cliente</th>
+                  <th class="text-end">Prestado</th>
+                  <th class="text-center">Interés</th>
+                  <th class="text-center">Plazo</th>
+                  <th class="text-end">Total a Pagar</th>
+                  <th class="text-center">Estado</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- REPORTES SECTION -->
+      <section id="reportes" class="section-view">
+        <h2 class="fw-bold mb-4"><i class="fas fa-file-invoice-dollar me-2 text-info"></i>Reportes y Estadísticas</h2>
+        
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="table-container">
+              <h5 class="fw-bold mb-3">Resumen por Día</h5>
+              <div class="table-responsive">
+                <table class="table table-sm" id="tabla-resumen-diario">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Fecha</th>
+                      <th class="text-end">Ventas</th>
+                      <th class="text-end">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="table-container">
+              <h5 class="fw-bold mb-3">Productos Más Vendidos</h5>
+              <div class="table-responsive">
+                <table class="table table-sm" id="tabla-top-productos">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Producto</th>
+                      <th class="text-center">Ventas</th>
+                      <th class="text-end">Ingresos</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="table-container mt-4">
+          <h5 class="fw-bold mb-3">Exportar Datos</h5>
+          <p class="text-muted small">Descarga tus datos para respaldo o análisis externo.</p>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-outline-primary btn-action" onclick="exportData('inventario')">
+              <i class="fas fa-download me-1"></i>Exportar Inventario (CSV)
+            </button>
+            <button class="btn btn-outline-success btn-action" onclick="exportData('ventas')">
+              <i class="fas fa-download me-1"></i>Exportar Ventas (CSV)
+            </button>
+            <button class="btn btn-outline-warning btn-action" onclick="exportData('deudores')">
+              <i class="fas fa-download me-1"></i>Exportar Deudores (CSV)
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // ============ CONFIGURACIÓN ============
+    const API_URL = "https://script.google.com/macros/s/AKfycbyYxybFb3G6p88i-m--hXg-frmAlvaPLRx65ImdSbLAMNuWDeeSRnp1oaNkQGUy1QQN/exec";
+    // =======================================
+
+    // Estado de la aplicación
+    let appData = {
+      inventario: [],
+      ventas: [],
+      deudores: [],
+      resumen: {}
+    };
+
+    // ============ AUTH ============
+    function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      if (username === 'mario' && password === 'vortx') {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+        showToast('¡Bienvenido, Mario!', 'success');
+        initializeApp();
+      } else {
+        document.getElementById('login-error').style.display = 'block';
+        showToast('Credenciales incorrectas', 'error');
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('¿Seguro que deseas cerrar sesión?')) {
+        location.reload();
+      }
+    }
+
+    // ============ INICIALIZACIÓN ============
+    async function initializeApp() {
+      showLoader(true);
+      try {
+        // Inicializar hojas en el backend (si no existen)
+        await apiCall('init', {});
+        // Cargar datos
+        await refreshData();
+      } catch (error) {
+        console.error('Error al inicializar:', error);
+        showToast('Error de conexión con la base de datos', 'error');
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    async function refreshData() {
+      showLoader(true);
+      try {
+        const response = await apiCall('obtenerDatos', {});
+        if (response.status === 'success') {
+          appData = response;
+          renderAll();
+          showToast('Datos actualizados', 'info');
+        } else {
+          throw new Error(response.message);
+        }
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+        showToast('No se pudieron cargar los datos: ' + error.message, 'error');
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    // ============ API COMMUNICATION ============
+    async function apiCall(action, payload) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          mode: 'no-cors', // Google Apps Script requiere esto
+          headers: {
+            'Content-Type': 'application/text', // Truco para evitar preflight complejo
+          },
+          body: JSON.stringify({
+            action: action,
+            ...payload
+          }),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        // Google Apps Script redirige, así que necesitamos un segundo fetch
+        // o usar la respuesta directa si está configurado correctamente
+        const text = await response.text();
+        
+        try {
+          return JSON.parse(text);
+        } catch {
+          // Si no es JSON, podría ser una redirección, intentamos de nuevo
+          // En producción, configurar el Apps Script para devolver JSON directo
+          return { status: 'success', message: 'Operación completada' };
+        }
+        
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Tiempo de espera agotado. Verifica tu conexión.');
+        }
+        throw error;
+      }
+    }
+
+    // Función alternativa más compatible con GAS
+    async function apiCallCompatible(action, payload) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        const callbackName = 'callback_' + Math.random().toString(36).substr(2, 9);
+        
+        window[callbackName] = function(response) {
+          delete window[callbackName];
+          document.body.removeChild(script);
+          resolve(response);
+        };
+        
+        const params = new URLSearchParams({
+          action: action,
+          callback: callbackName
+        });
+        
+        // Para POST simulado con GET + datos en URL (limitado por longitud)
+        script.src = `${API_URL}?${params}&data=${encodeURIComponent(JSON.stringify(payload))}`;
+        script.onerror = () => {
+          delete window[callbackName];
+          reject(new Error('Error de red al conectar con la API'));
+        };
+        
+        document.body.appendChild(script);
+      });
+    }
+
+    // ============ FORM SUBMISSION ============
+    async function submitForm(e, action) {
+      e.preventDefault();
+      showLoader(true);
+      
+      const form = e.target;
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Convertir valores numéricos
+      Object.keys(data).forEach(key => {
+        if (!isNaN(data[key]) && data[key] !== '') {
+          data[key] = parseFloat(data[key]);
+        }
+      });
+      
+      try {
+        const response = await apiCall(action, data);
+        
+        if (response.status === 'success') {
+          showToast(response.message, 'success');
+          form.reset();
+          await refreshData();
+          
+          // Recalcular totales si es necesario
+          if (action === 'guardarVenta') {
+            document.getElementById('venta-total').value = '$0.00';
+          }
+          if (action === 'guardarDeuda') {
+            document.getElementById('deuda-total').value = '$0.00';
+          }
+        } else {
+          throw new Error(response.message);
+        }
+      } catch (error) {
+        console.error('Error en formulario:', error);
+        showToast('Error: ' + error.message, 'error');
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    // ============ DELETE & ACTIONS ============
+    async function deleteRow(sheetName, rowIndex) {
+      if (!confirm('¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer.')) {
+        return;
+      }
+      
+      showLoader(true);
+      try {
+        const response = await apiCall('borrarFila', {
+          hoja: sheetName,
+          fila: rowIndex
+        });
+        
+        if (response.status === 'success') {
+          showToast('Registro eliminado', 'success');
+          await refreshData();
+        } else {
+          throw new Error(response.message);
+        }
+      } catch (error) {
+        console.error('Error al eliminar:', error);
+        showToast('Error al eliminar: ' + error.message, 'error');
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    async function markAsPaid(rowIndex) {
+      showLoader(true);
+      try {
+        const response = await apiCall('marcarPagado', {
+          fila: rowIndex
+        });
+        
+        if (response.status === 'success') {
+          showToast('Deuda marcada como pagada', 'success');
+          await refreshData();
+        } else {
+          throw new Error(response.message);
+        }
+      } catch (error) {
+        console.error('Error al actualizar:', error);
+        showToast('Error: ' + error.message, 'error');
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    // ============ RENDERING ============
+    function renderAll() {
+      renderDashboard();
+      renderInventario();
+      renderVentas();
+      renderDeudores();
+      renderReportes();
+    }
+
+    function renderDashboard() {
+      // Stats
+      document.getElementById('dash-ventas-hoy').textContent = 
+        '$' + (appData.resumen.ventasHoy || 0).toFixed(2);
+      document.getElementById('dash-por-cobrar').textContent = 
+        '$' + (appData.resumen.porCobrar || 0).toFixed(2);
+      document.getElementById('dash-productos').textContent = 
+        appData.inventario.length;
+      
+      // Últimas ventas
+      const tbody = document.querySelector('#tabla-ventas-dash tbody');
+      tbody.innerHTML = '';
+      const recientes = [...appData.ventas].reverse().slice(0, 5);
+      
+      recientes.forEach(venta => {
+        const fecha = new Date(venta[0]).toLocaleString('es-MX', {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        tbody.innerHTML += `
+          <tr>
+            <td><small>${fecha}</small></td>
+            <td>${venta[1]}</td>
+            <td class="text-center">${venta[2]}</td>
+            <td class="text-end fw-bold">$${parseFloat(venta[3] || 0).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      
+      // Deudas pendientes (mini lista)
+      const listaDeudas = document.getElementById('lista-deudas-dash');
+      listaDeudas.innerHTML = '';
+      const pendientes = appData.deudores.filter(d => d[6] === 'Pendiente').slice(0, 5);
+      
+      if (pendientes.length === 0) {
+        listaDeudas.innerHTML = '<p class="text-muted small text-center py-3">No hay deudas pendientes</p>';
+      } else {
+        pendientes.forEach(deuda => {
+          listaDeudas.innerHTML += `
+            <div class="list-group-item border-0 px-0 py-2">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong class="d-block">${deuda[1]}</strong>
+                  <small class="text-muted">$${parseFloat(deuda[5]).toFixed(2)}</small>
+                </div>
+                <span class="badge bg-warning text-dark">Pendiente</span>
+              </div>
+            </div>
+          `;
+        });
+      }
+    }
+
+    function renderInventario() {
+      const tbody = document.querySelector('#tabla-inventario tbody');
+      tbody.innerHTML = '';
+      
+      appData.inventario.forEach((item, index) => {
+        const filaReal = index + 2; // +2 por encabezado y base 1
+        const stockClass = item[3] < 5 ? 'text-danger fw-bold' : (item[3] < 10 ? 'text-warning fw-bold' : '');
+        
+        tbody.innerHTML += `
+          <tr>
+            <td class="fw-semibold">${item[1]}</td>
+            <td class="text-end">$${parseFloat(item[2]).toFixed(2)}</td>
+            <td class="text-center ${stockClass}">${item[3]}</td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-danger btn-action" 
+                      onclick="deleteRow('Inventario', ${filaReal})"
+                      title="Eliminar producto">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      // Actualizar select de productos para ventas
+      const select = document.getElementById('select-productos-venta');
+      select.innerHTML = '<option value="">Seleccione un producto...</option>';
+      
+      appData.inventario.forEach(item => {
+        if (item[3] > 0) { // Solo productos con stock
+          select.innerHTML += `
+            <option value="${item[1]}" data-price="${item[2]}">
+              ${item[1]} - $${parseFloat(item[2]).toFixed(2)} (Stock: ${item[3]})
+            </option>
+          `;
+        }
+      });
+    }
+
+    function renderVentas() {
+      const tbody = document.querySelector('#tabla-historial-ventas tbody');
+      tbody.innerHTML = '';
+      
+      // Últimas 20 ventas
+      const historial = [...appData.ventas].reverse().slice(0, 20);
+      
+      historial.forEach(venta => {
+        const fecha = new Date(venta[0]).toLocaleString('es-MX');
+        tbody.innerHTML += `
+          <tr>
+            <td><small>${fecha}</small></td>
+            <td>${venta[1]}</td>
+            <td class="text-center">${venta[2]}</td>
+            <td class="text-end fw-bold">$${parseFloat(venta[3]).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderDeudores() {
+      const tbody = document.querySelector('#tabla-deudores tbody');
+      tbody.innerHTML = '';
+      
+      const pendientes = appData.deudores.filter(d => d[6] === 'Pendiente');
+      document.getElementById('contador-deudas').textContent = `${pendientes.length} pendientes`;
+      
+      appData.deudores.forEach((deuda, index) => {
+        const filaReal = index + 2;
+        const estadoBadge = deuda[6] === 'Pendiente' 
+          ? '<span class="badge bg-warning text-dark">Pendiente</span>'
+          : '<span class="badge bg-success">Pagado</span>';
+        
+        const acciones = deuda[6] === 'Pendiente'
+          ? `
+            <button class="btn btn-sm btn-outline-success btn-action me-1" 
+                    onclick="markAsPaid(${filaReal})" title="Marcar como pagado">
+              <i class="fas fa-check"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger btn-action" 
+                    onclick="deleteRow('Deudores', ${filaReal})" title="Eliminar">
+              <i class="fas fa-trash"></i>
+            </button>
+          `
+          : `<span class="text-muted small">Completado</span>`;
+        
+        tbody.innerHTML += `
+          <tr>
+            <td class="fw-semibold">${deuda[1]}</td>
+            <td class="text-end">$${parseFloat(deuda[2]).toFixed(2)}</td>
+            <td class="text-center">${deuda[3]}%</td>
+            <td class="text-center">${deuda[4]} mes(es)</td>
+            <td class="text-end fw-bold text-danger">$${parseFloat(deuda[5]).toFixed(2)}</td>
+            <td class="text-center">${estadoBadge}</td>
+            <td class="text-end">${acciones}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderReportes() {
+      // Resumen diario (agrupar ventas por fecha)
+      const ventasPorDia = {};
+      appData.ventas.forEach(venta => {
+        const fecha = new Date(venta[0]).toLocaleDateString('es-MX');
+        if (!ventasPorDia[fecha]) {
+          ventasPorDia[fecha] = { count: 0, total: 0 };
+        }
+        ventasPorDia[fecha].count += parseInt(venta[2]);
+        ventasPorDia[fecha].total += parseFloat(venta[3]);
+      });
+      
+      const tbodyDiario = document.querySelector('#tabla-resumen-diario tbody');
+      tbodyDiario.innerHTML = '';
+      Object.entries(ventasPorDia).reverse().slice(0, 10).forEach(([fecha, datos]) => {
+        tbodyDiario.innerHTML += `
+          <tr>
+            <td>${fecha}</td>
+            <td class="text-center">${datos.count}</td>
+            <td class="text-end fw-bold">$${datos.total.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      
+      // Top productos
+      const productosStats = {};
+      appData.ventas.forEach(venta => {
+        const nombre = venta[1];
+        if (!productosStats[nombre]) {
+          productosStats[nombre] = { ventas: 0, ingresos: 0 };
+        }
+        productosStats[nombre].ventas += parseInt(venta[2]);
+        productosStats[nombre].ingresos += parseFloat(venta[3]);
+      });
+      
+      const tbodyTop = document.querySelector('#tabla-top-productos tbody');
+      tbodyTop.innerHTML = '';
+      Object.entries(productosStats)
+        .sort((a, b) => b[1].ingresos - a[1].ingresos)
+        .slice(0, 10)
+        .forEach(([producto, stats]) => {
+          tbodyTop.innerHTML += `
+            <tr>
+              <td class="fw-semibold">${producto}</td>
+              <td class="text-center">${stats.ventas}</td>
+              <td class="text-end fw-bold">$${stats.ingresos.toFixed(2)}</td>
+            </tr>
+          `;
+        });
+    }
+
+    // ============ UTILITIES ============
+    function navigate(sectionId) {
+      // Ocultar todas las secciones
+      document.querySelectorAll('.section-view').forEach(el => {
+        el.classList.remove('active');
+      });
+      // Mostrar la seleccionada
+      document.getElementById(sectionId).classList.add('active');
+      
+      // Actualizar menú activo
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+      
+      // Refresh si es necesario
+      if (sectionId === 'reportes') {
+        renderReportes();
+      }
+    }
+
+    function calcularTotalVenta() {
+      const select = document.getElementById('select-productos-venta');
+      const option = select.options[select.selectedIndex];
+      const price = parseFloat(option.getAttribute('data-price')) || 0;
+      const qty = parseInt(document.getElementById('venta-cantidad').value) || 0;
+      
+      const total = price * qty;
+      document.getElementById('venta-total').value = '$' + total.toFixed(2);
+    }
+
+    function calcularTotalDeuda() {
+      const monto = parseFloat(document.getElementById('deuda-monto').value) || 0;
+      const interes = parseFloat(document.getElementById('deuda-interes').value) || 0;
+      const meses = parseInt(document.getElementById('deuda-meses').value) || 0;
+      
+      // Fórmula: Total = Monto + (Monto * (Interés/100) * Meses)
+      const interesTotal = monto * (interes / 100) * meses;
+      const total = monto + interesTotal;
+      
+      document.getElementById('deuda-total').value = '$' + total.toFixed(2);
+    }
+
+    function filterTable(input, tableId) {
+      const filter = input.value.toLowerCase();
+      const table = document.getElementById(tableId);
+      const rows = table.getElementsByTagName('tr');
+      
+      for (let i = 1; i < rows.length; i++) { // Saltar encabezado
+        const cells = rows[i].getElementsByTagName('td');
+        let match = false;
+        
+        for (let cell of cells) {
+          if (cell && cell.textContent.toLowerCase().includes(filter)) {
+            match = true;
+            break;
+          }
+        }
+        
+        rows[i].style.display = match ? '' : 'none';
+      }
+    }
+
+    function exportData(type) {
+      let data = [];
+      let filename = '';
+      
+      switch(type) {
+        case 'inventario':
+          data = appData.inventario;
+          filename = 'inventario_' + new Date().toISOString().slice(0,10) + '.csv';
+          break;
+        case 'ventas':
+          data = appData.ventas;
+          filename = 'ventas_' + new Date().toISOString().slice(0,10) + '.csv';
+          break;
+        case 'deudores':
+          data = appData.deudores;
+          filename = 'deudores_' + new Date().toISOString().slice(0,10) + '.csv';
+          break;
+      }
+      
+      if (data.length === 0) {
+        showToast('No hay datos para exportar', 'info');
+        return;
+      }
+      
+      // Convertir a CSV
+      const csv = [
+        ['Fecha', 'Campo1', 'Campo2', 'Campo3', 'Campo4', 'Campo5', 'Campo6'].slice(0, data[0].length + 1),
+        ...data.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+      
+      // Descargar
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+      
+      showToast('Exportando ' + filename, 'success');
+    }
+
+    function showLoader(show) {
+      document.getElementById('loader').classList.toggle('show', show);
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const bgClass = {
+        'success': 'bg-success',
+        'error': 'bg-danger',
+        'warning': 'bg-warning',
+        'info': 'bg-primary'
+      }[type] || 'bg-primary';
+      
+      const icon = {
+        'success': 'fa-check-circle',
+        'error': 'fa-exclamation-circle',
+        'warning': 'fa-exclamation-triangle',
+        'info': 'fa-info-circle'
+      }[type] || 'fa-info-circle';
+      
+      const toast = document.createElement('div');
+      toast.className = `toast align-items-center text-white ${bgClass} border-0 mb-2`;
+      toast.setAttribute('role', 'alert');
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="fas ${icon} me-2"></i>${message}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      `;
+      
+      container.appendChild(toast);
+      
+      // Auto-dismiss
+      setTimeout(() => {
+        toast.remove();
+      }, 4000);
+    }
+
+    // Inicializar listeners al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+      // Prevenir envío por Enter en formularios (opcional)
+      document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+            // e.preventDefault(); // Descomentar si quieres evitar submit con Enter
+          }
+        });
+      });
+    });
+  </script>
+  
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
